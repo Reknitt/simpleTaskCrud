@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,6 +22,7 @@ var (
 )
 
 func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// handle http methods
 	switch {
 	case r.Method == http.MethodPost && TaskRe.MatchString(r.URL.Path):
 		h.CreateTask(w, r)
@@ -40,6 +40,7 @@ func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.DeleteTask(w, r)
 		return
 	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 }
@@ -49,8 +50,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 	lp := data.GetTasks()
-	en := json.NewEncoder(w)
-	err := en.Encode(lp)
+	err := lp.ToJSON(w)
 	if err != nil {
 		http.Error(w, "Unable to encode json", http.StatusInternalServerError)
 	}

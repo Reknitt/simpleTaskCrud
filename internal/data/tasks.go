@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func GetTasks() []*entities.Task {
+func GetTasks() entities.Tasks {
 	return tasks
 }
 
