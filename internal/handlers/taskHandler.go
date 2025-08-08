@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
 	"simpleTaskCrud/internal/data"
+	"simpleTaskCrud/pkg/entities"
+	"strconv"
 )
 
 type TaskHandler struct {
@@ -18,7 +19,7 @@ func NewTask(l *log.Logger) *TaskHandler {
 
 var (
 	TaskRe, _     = regexp.Compile(`^/tasks/*$`)
-	TaskWithId, _ = regexp.Compile(`^/tasks/([a-z0-9]+(?:-[a-z0-9]+)+)$`)
+	TaskWithId, _ = regexp.Compile(`/\d+`)
 )
 
 func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -46,15 +47,50 @@ func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Body)
+	task := &entities.Task{}
+	err := task.FromJSON(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to decode json", http.StatusBadRequest)
+		return
+	}
+	data.CreateTask(task)
 }
+
 func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 	lp := data.GetTasks()
 	err := lp.ToJSON(w)
 	if err != nil {
 		http.Error(w, "Unable to encode json", http.StatusInternalServerError)
+		return
 	}
 }
-func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request)    {}
+
+func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	f := TaskWithId.FindAllString(r.URL.Path, -1)
+	if len(f) != 1 {
+		http.Error(w, "Invalid URI", http.StatusBadRequest)
+		return
+	}
+	idString := f[0][1:]
+
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		http.Error(w, "Bad Id", http.StatusBadRequest)
+		return
+	}
+
+	ent, err := data.GetTask(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = ent.ToJSON(w)
+	if err != nil {
+		http.Error(w, "unable to encode json", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {}
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {}
