@@ -16,6 +16,7 @@ func main() {
 
 	mux.Handle("/", hh)
 	mux.Handle("/tasks", th)
+	mux.Handle("/tasks/", th)
 
 	http.ListenAndServe(":80", mux)
 }
